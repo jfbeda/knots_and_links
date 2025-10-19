@@ -195,6 +195,16 @@ class Link:
         """Add a knot by name and coordinate array."""
         self.subknots[name] = Knot(name, coords)
 
+    @ property
+    def total_num_points(self):
+        num = 0
+        for knot in list(self.subknots.values()):
+            num += knot.num_points
+        return num
+    
+    @ property
+    def num_subknots(self):
+        return len(list(self.subknots.keys()))
 
     @ property
     def minimum_distance(self):
@@ -304,6 +314,11 @@ class SetofLinks:
 
         for link in self.links:
             normalize_link(link, desired_num_points_per_subknot)
+
+        for link in self.links:
+            assert link.total_num_points == self.links[0].total_num_points, f"Some links have different numbers of points! In particular, link {link.name} has {link.total_num_points} whereas {self.links[0].name} has {self.links[0].total_num_points} in total across all components."
+
+        print(f"All links now have {self.links[0].total_num_points} points.")
 
     @classmethod
     def from_folder_name(cls, folder_name: str):
@@ -476,7 +491,12 @@ def extend_knot(knot, desired_num_points, method = "circle"):
         return copy.deepcopy(knot)
     
     else:
-        return knot_sum(knot, generate_unknot(desired_num_points - knot.num_points, knot.segment_length, method = method))
+        # Generate new knot as a knot sum of the previous knot with an unknot of a particular number of points
+        # the unknow has 2 additional points to compensate for the loss of two points under knot sum
+        new_knot = knot_sum(knot, generate_unknot(desired_num_points - knot.num_points+2, knot.segment_length, method = method))
+        assert new_knot.num_points == desired_num_points, f"Error! The new knot has the wrong number of points. It's supposed to have {desired_num_points}, but instead has {new_knot.num_points} points"
+        return new_knot
+
 
 def extend_link(link, component_name, desired_num_points, method = "linear"):
     initial_minimum_separation = link.minimum_distance
@@ -486,6 +506,7 @@ def extend_link(link, component_name, desired_num_points, method = "linear"):
     if (final_minimum_separation + 1e7 < initial_minimum_separation):
         print(f"The minimum distance between points appears to have gone down, this the knot addition may have changed the knot topology.\nInitial minimum distance = {initial_minimum_separation}, final minimum distance = {final_minimum_separation}")
     
+    assert link.subknots[component_name].num_points == desired_num_points, f"The normalized link doesn't have the right number of points in it! The subknot {component_name} is supposed to have {desired_num_points} in it, but insetead has {link.subknots[component_name].num_points} points."
 
 def normalize_link(link, desired_num_points_per_subknot):
 
@@ -493,6 +514,8 @@ def normalize_link(link, desired_num_points_per_subknot):
 
     for subknot_name in list(link.subknots.keys()):
         extend_link(link, subknot_name, desired_num_points_per_subknot, method = "linear")
+
+    assert link.total_num_points == link.num_subknots * desired_num_points_per_subknot, f"The normalized link doesn't have the right number of points in it! It is supposed to have {link.num_subknots * desired_num_points_per_subknot} points in total, but instead has {link.total_num_points} points in total"
 
 ###############################################################################
 
