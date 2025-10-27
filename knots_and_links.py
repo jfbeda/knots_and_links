@@ -164,7 +164,7 @@ class Knot:
         """Returns the coordinates of the point furthest from the center of mass"""
         return self.coords[self.extremum_index]
     
-    
+
 def rotation_matrix_to_z_axis(v):
     """
     Returns R such that R @ v = [0, 0, 1].
@@ -205,9 +205,9 @@ class Link:
     Represents a link composed of multiple Knot components.
     """
 
-    def __init__(self, name=None):
+    def __init__(self, subknots = dict(), name=None):
         self.name = name or "Unnamed Link"
-        self.subknots = {}  # dict[str, Knot]
+        self.subknots = subknots  # dict[str, Knot]
 
     def add_knot(self, name, coords):
         """Add a knot by name and coordinate array."""
