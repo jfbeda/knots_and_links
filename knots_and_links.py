@@ -68,6 +68,58 @@ class Knot:
     #     new_name = self.name + " + " +  knot2.name
 
     #     return Knot(name = new_name, coords = splice_knots(self, knot2))
+    
+    def interpolate(self, desired_num_points):
+        """
+        Resample self.coords to 'desired_num_points' points, evenly spaced by arc length,
+        assuming the geometry is a closed loop even if self.coords does not repeat
+        the first point at the end. The returned array remains "open"
+        (no duplicated endpoint).
+        """
+        assert desired_num_points > self.num_points, (
+            "The desired number of points to interpolate to must be larger than the current number of points"
+        )
+
+        coords = np.asarray(self.coords, dtype=float)
+        if coords.ndim != 2 or coords.shape[1] != 3:
+            raise ValueError("self.coords must be a (N, 3) array of XYZ coordinates.")
+        if coords.shape[0] < 2:
+            raise ValueError("At least two points are required.")
+
+        # Remove zero-length consecutive duplicates (helps with degenerate input)
+        diffs = np.diff(coords, axis=0)
+        seglens = np.linalg.norm(diffs, axis=1)
+        keep = np.concatenate(([True], seglens > 0))
+        work = coords[keep]
+        if work.shape[0] < 2:
+            raise ValueError("Not enough non-duplicate points to interpolate.")
+
+        # Arc-length parameter along the given polyline (without wrap)
+        diffs = np.diff(work, axis=0)
+        seglens = np.linalg.norm(diffs, axis=1)
+        s = np.concatenate(([0.0], np.cumsum(seglens)))
+
+        # Add the wrap-around segment to model a closed loop
+        wrap_len = np.linalg.norm(work[0] - work[-1])
+        total_len = s[-1] + wrap_len
+
+        # Build periodic parameter/value arrays by appending the first point at s=total_len
+        s_periodic = np.concatenate((s, [total_len]))
+        x = np.concatenate((work[:, 0], work[0:1, 0]))
+        y = np.concatenate((work[:, 1], work[0:1, 1]))
+        z = np.concatenate((work[:, 2], work[0:1, 2]))
+
+        # Target samples: evenly spaced around [0, total_len)
+        # endpoint=False avoids duplicating the start point at the end
+        s_new = np.linspace(0.0, total_len, desired_num_points, endpoint=False)
+
+        x_new = np.interp(s_new, s_periodic, x)
+        y_new = np.interp(s_new, s_periodic, y)
+        z_new = np.interp(s_new, s_periodic, z)
+
+        new_coords = np.column_stack((x_new, y_new, z_new))
+        self.coords = new_coords
+
 
     @property
     def is_orientated(self):
@@ -111,42 +163,8 @@ class Knot:
     def extremum(self):
         """Returns the coordinates of the point furthest from the center of mass"""
         return self.coords[self.extremum_index]
-
-# def rotation_matrix_to_z_axis3(v):
-#     """Returns a rotation matrix R that when acting on v gives the z hat direction. I.e. R @ v = z"""
-
-#     v = np.array(v, dtype=float)
-#     v /= np.linalg.norm(v)
-#     z = np.array([0.0, 0.0, 1.0])
-#     rot = Rotation.align_vectors([z], [v])[0]
-#     return rot.as_matrix()
-
-# def rotation_matrix_to_z_axis2(v):
-#     """Returns a rotation matrix R that when acting on v gives the z hat direction. I.e. R @ v = z"""
-
-#     v_hat = v/np.linalg.norm(v)
-#     print(v_hat)
-#     z_hat = np.array([0.0, 0.0, 1.0])
-#     v_hat_cross_z_hat = np.cross(v_hat, z_hat)
-#     print(v_hat_cross_z_hat)
-#     norm = np.linalg.norm(v_hat_cross_z_hat)
-#     print(norm)
-#     if np.isclose(norm,0.):
-#         return np.array([[1,0,0],[0,1,0],[0,0,1]])
     
-#     else:
-#         n_hat = v_hat_cross_z_hat/norm
-#         theta = np.arcsin(norm)
-#         print(theta)
-#         print(np.arccos(np.dot(v_hat,z_hat)))
-#         theta = np.arccos(np.dot(v_hat,z_hat))
-#         rotation_matrix = Rotation.from_rotvec(theta * n_hat).as_matrix()
-
-#     print(rotation_matrix @ rotation_matrix.T)
-#     print(rotation_matrix @ v_hat)
-
-#     return rotation_matrix
-
+    
 def rotation_matrix_to_z_axis(v):
     """
     Returns R such that R @ v = [0, 0, 1].
@@ -625,3 +643,43 @@ class Visualizer:
         ax.set_ylim(y_mid - r, y_mid + r)
         ax.set_zlim(z_mid - r, z_mid + r)
 
+
+
+def writhe_density(knot_coords_1, knot_coords_2):
+    """
+    Input: knot_coors_1/knot_coords_2 are a set of (N,3) arrays of coordinates where the knot has N points in it.
+
+    Returns the integrand of the gauss linking number between knot1 and knot2
+    """
+    assert knot_coords_1.shape == knot_coords_2.shape, "Cannot compute writhe density between two knots of different shapes"
+    N = len(knot_coords_1)
+
+    # Extend the coordinate knots:
+    r1 = np.vstack((knot_coords_1,knot_coords_1[0]))
+    r2 = np.vstack((knot_coords_2,knot_coords_2[0]))
+
+    dr1 = np.zeros_like(knot_coords_1)
+    dr2 = np.zeros_like(knot_coords_2)
+
+    for i in range(N):
+        dr1[i] = r1[i+1]-r1[i]
+        dr2[i] = r2[i+1]-r2[i]
+
+    writhe_density = np.zeros((N,N))
+
+    if np.allclose(r1,r2):
+        for i in range(N):
+            for j in range(N):
+                if i != j:
+                    writhe_density[i,j] = (np.dot(np.cross(dr1[i],dr2[j]),(r1[i]-r2[j])))/(np.linalg.norm(r1[i]-r2[j])**3)
+
+    else:
+        for i in range(N):
+            for j in range(N):
+                assert not np.isclose(np.linalg.norm(r1[i]-r2[j]),0), "Can't divide by zero. Dispite the two knots fed to writhe density being different, they seem to overlap at a point (There's no way this error message is actually gonna be called)"
+                writhe_density[i,j] = (np.dot(np.cross(dr1[i],dr2[j]),(r1[i]-r2[j])))/(np.linalg.norm(r1[i]-r2[j])**3)
+
+    return writhe_density/(4*np.pi)
+
+def writhe(knot_coords_1, knot_coords_2):
+    return np.sum(writhe_density(knot_coords_1, knot_coords_2))
