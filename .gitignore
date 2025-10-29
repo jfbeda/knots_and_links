@@ -8,3 +8,8 @@ writhe.py
 Djordje_test.py
 *.dat.nos
 ml_writhe_coords
+1_main_coordinates
+2_normalized_coordinates
+3_lammps_normalized_coordinates
+lammps_simulation
+log.lammps
