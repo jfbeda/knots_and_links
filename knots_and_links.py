@@ -205,9 +205,9 @@ class Link:
     Represents a link composed of multiple Knot components.
     """
 
-    def __init__(self, subknots = dict(), name=None):
+    def __init__(self, subknots = None, name = None):
         self.name = name or "Unnamed Link"
-        self.subknots = subknots  # dict[str, Knot]
+        self.subknots = {} if subknots is None else dict(subknots) # dict[str, Knot]
 
     def add_knot(self, name, coords):
         """Add a knot by name and coordinate array."""
@@ -323,7 +323,17 @@ class Link:
 class SetofLinks:
 
     def __init__(self, links):
-        self.links = links
+
+        self.links = links # Python list of links
+
+    def __str__(self):
+        output = "This is a set of links containing the links:"
+
+        for link in self.links:
+            output += "\n"
+            output += f"{link.name} ({link.total_num_points} points total)"
+
+        return output
 
     def normalize(self, desired_num_points_per_subknot = None):
 
@@ -345,6 +355,7 @@ class SetofLinks:
         Uses Link.from_csv on each file found (non-recursive).
         """
         folder = Path(folder_name)
+
         if not folder.is_dir():
             raise ValueError(f"Not a directory: {folder_name}")
 
@@ -355,6 +366,7 @@ class SetofLinks:
             raise ValueError(f"No .csv files found in: {folder_name}")
 
         links = [Link.from_csv(str(p)) for p in csv_files]
+        print([link.total_num_points for link in links])
         return cls(links)
     
     def to_folder_name(self, folder_name: str, overwrite: bool = False):

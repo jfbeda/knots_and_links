@@ -86,7 +86,6 @@ def process_file(filepath: Path,
     print(f"Saved writhe data to {savepath}")
 
 def main():
-    print("hi")
     p = argparse.ArgumentParser(description="Compute writhe matrices from .dat.nos files.")
     p.add_argument("--in-dir", default="ml_coords",
                    help="Directory to read .dat.nos files from (default: %(default)s)")
