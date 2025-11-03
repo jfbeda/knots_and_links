@@ -88,7 +88,9 @@ def compute_kernel_chord(ring1, ring2, i, j):
         if np.isclose(np.linalg.norm(ring1[i]-ring2[j]),0):
             return 0
         
-    if np.abs(i-j) <= 1.1 or np.abs(i-j) == 50:
+    # remove points of the form (i, i+1) as often they are very large
+    length = len(ring1)
+    if int(np.abs(i-j)) == 1 or int(np.abs(i-j)) == length - 1:
         return 0
     
     # if (j-i)%P in (1, P-1):
