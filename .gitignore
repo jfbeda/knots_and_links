@@ -1,7 +1,6 @@
 .DS_Store
 __pycache__/
 *.ipynb
-writhe.py
 *.dat.nos
 1_main_coordinates
 2_normalized_coordinates
