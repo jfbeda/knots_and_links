@@ -21,13 +21,19 @@ def plot_multi_hist(data, bins=20, density=False, labels=None, title="Histograms
 
     if labels is None:
         labels = [f"Data {i}" for i in range(len(data))]
+    print(labels)
 
     for i, d in enumerate(data):
         counts, bin_edges = np.histogram(d, bins=bins, density=density)
         bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
         plt.plot(bin_centers, counts, label=labels[i])
     
-    plt.legend()
+    plt.legend(
+    bbox_to_anchor=(1.05, 1),   # position legend just outside the right edge
+    loc='upper left',           # anchor the upper left corner of the legend
+    borderaxespad=0.
+)
+    plt.tight_layout()
     plt.xlabel("Value")
     plt.ylabel("Density" if density else "Frequency")
     plt.title(title)
