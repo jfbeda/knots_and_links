@@ -2,10 +2,11 @@
 __pycache__/
 *.ipynb
 *.dat.nos
-1_main_coordinates
-2_normalized_coordinates
-3_lammps_normalized_coordinates
+1_main_coordinates*
+2_normalized_coordinates*
+3_lammps_normalized_coordinates*
 lammps_simulation
 log.lammps
-4_xyz_files
-5_writhe_files
+4_xyz_files*
+5_writhe_files*
+beachball.py

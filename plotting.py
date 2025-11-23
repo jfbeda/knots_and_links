@@ -21,7 +21,8 @@ def plot_multi_hist(data, bins=20, density=False, labels=None, title="Histograms
 
     if labels is None:
         labels = [f"Data {i}" for i in range(len(data))]
-    print(labels)
+
+    fig, ax = plt.subplots()
 
     for i, d in enumerate(data):
         counts, bin_edges = np.histogram(d, bins=bins, density=density)

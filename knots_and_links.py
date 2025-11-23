@@ -366,7 +366,7 @@ class SetofLinks:
             raise ValueError(f"No .csv files found in: {folder_name}")
 
         links = [Link.from_csv(str(p)) for p in csv_files]
-        print([link.total_num_points for link in links])
+        print(f"Initialized links with total numbers of points: {[link.total_num_points for link in links]}")
         return cls(links)
     
     def to_folder_name(self, folder_name: str, overwrite: bool = False):
