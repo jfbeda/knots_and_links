@@ -33,7 +33,7 @@ def compute_total_writhe_from_chunk(chunk, just_a_to_b_writhe = False): # chunk 
     else:
         return chunk.sum(axis = (1,2))/(np.pi * 4)  # Sum of the writhe axes 
 
-def plot_histogram_from_writhe_dict(writhe_dict, bins = 20, density = False, labels = None, title = "Histograms (line style)", just_a_to_b_writhe = False):
+def plot_histogram_from_writhe_dict(writhe_dict, bins = 20, density = False, labels = None, title = "Histograms (line style)", just_a_to_b_writhe = False, xlabel = "value", ylabel = "Density"):
     
     keys = list(writhe_dict.keys())
     values = [writhe_dict[key] for key in keys]
@@ -42,4 +42,4 @@ def plot_histogram_from_writhe_dict(writhe_dict, bins = 20, density = False, lab
     labels = keys if labels is None else labels 
     
     
-    plot_multi_hist(data, bins=bins, density=density, labels=labels, title=title)
+    plot_multi_hist(data, bins=bins, density=density, labels=labels, title=title, xlabel = xlabel, ylabel = ylabel)

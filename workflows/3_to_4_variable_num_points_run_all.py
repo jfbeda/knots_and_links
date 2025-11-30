@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 import shutil
 
-NUM_RUNS = 100
+NUM_RUNS = 1000
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

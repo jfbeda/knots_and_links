@@ -96,15 +96,34 @@ def counts_for_components(sizes: List[int], ring: bool) -> Tuple[int, int, int]:
     num_angles = sum(angles_for(n) for n in sizes)
     return num_atoms, num_bonds, num_angles
 
-def compute_box(components: List[List[Tuple[float,float,float]]], padding: float) -> Tuple[float,float,float,float,float,float]:
+def compute_box(components, padding_fraction=0.5):
+    """
+    Compute bounding box padded by a *fraction* of the largest dimension.
+    padding_fraction = 0.5 means padding = 50% of max range → doubles box size.
+    """
     all_pts = [p for comp in components for p in comp]
     xs = [p[0] for p in all_pts]
     ys = [p[1] for p in all_pts]
     zs = [p[2] for p in all_pts]
-    xmin, xmax = min(xs) - padding, max(xs) + padding
-    ymin, ymax = min(ys) - padding, max(ys) + padding
-    zmin, zmax = min(zs) - padding, max(zs) + padding
+
+    xmin_raw, xmax_raw = min(xs), max(xs)
+    ymin_raw, ymax_raw = min(ys), max(ys)
+    zmin_raw, zmax_raw = min(zs), max(zs)
+
+    dx = xmax_raw - xmin_raw
+    dy = ymax_raw - ymin_raw
+    dz = zmax_raw - zmin_raw
+
+    # Padding = fraction of the largest dimension
+    max_dim = max(dx, dy, dz)
+    pad = padding_fraction * max_dim
+
+    xmin, xmax = xmin_raw - pad, xmax_raw + pad
+    ymin, ymax = ymin_raw - pad, ymax_raw + pad
+    zmin, zmax = zmin_raw - pad, zmax_raw + pad
+
     return xmin, xmax, ymin, ymax, zmin, zmax
+
 
 def fmt_float(x: float, precision: int) -> str:
     return f"{x:.{precision}f}".rstrip('0').rstrip('.') if precision is not None else f"{x}"
@@ -215,6 +234,8 @@ def main():
     p.add_argument("input", type=Path, help="Input CSV/XYZ file from KnotPlot (can have multiple components).")
     p.add_argument("-o", "--output", type=Path,
                help="Output .dat file path. If not given, defaults to input name with .dat")
+    p.add_argument("--pad-frac", type=float, default=0.5,
+               help="Padding fraction of the largest dimension (0.5 = 50%).")
     p.add_argument("--out-dir", type=Path, default=None,
                help="Directory to place the output file in (used only when --output is not given).")
     p.add_argument("--no-ring", dest="ring", action="store_false", help="Do NOT close bonds/angles as a ring.")
@@ -227,7 +248,6 @@ def main():
     p.add_argument("--atom-types", type=int, default=1, help="Number of atom types (for 'Masses' section).")
     p.add_argument("--box", nargs=6, metavar=("XMIN","XMAX","YMIN","YMAX","ZMIN","ZMAX"),
                    help="Explicit simulation box bounds. If omitted, computed from data + padding.")
-    p.add_argument("--padding", type=float, default=5.0, help="Padding added to auto-computed bounds (each side).")
     p.add_argument("--precision", type=int, default=6, help="Decimal places for floats in output.")
     p.add_argument("--title", type=str, default="LAMMPS data file: KnotPlot link",
                    help="Title line at top of the file.")
@@ -245,7 +265,8 @@ def main():
         xmin,xmax,ymin,ymax,zmin,zmax = map(float, args.box)
         box = (xmin,xmax,ymin,ymax,zmin,zmax)
     else:
-        box = compute_box(components, args.padding)
+        box = compute_box(components, padding_fraction=args.pad_frac)
+
 
     data = build_lammps_data(
         components=components,

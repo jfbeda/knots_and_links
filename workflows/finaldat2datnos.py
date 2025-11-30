@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+# Call using
+# python finaldat2datnos.py --infolder <name> --outfolder <name>
+
 import glob
 import os
 import re

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_multi_hist(data, bins=20, density=False, labels=None, title="Histograms (line style)"):
+def plot_multi_hist(data, bins=20, labels=None, density = False, title="Histograms (line style)", xlabel = "value", ylabel = "Density"):
     """
     Plot multiple histograms as lines, one for each dataset in a list of lists.
 
@@ -35,8 +35,8 @@ def plot_multi_hist(data, bins=20, density=False, labels=None, title="Histograms
     borderaxespad=0.
 )
     plt.tight_layout()
-    plt.xlabel("Value")
-    plt.ylabel("Density" if density else "Frequency")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(title)
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.show()

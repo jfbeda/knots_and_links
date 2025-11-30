@@ -1,3 +1,7 @@
+
+# Call using:
+# python -m workflows.2_to_3_variable_num_points_lammps
+
 import os
 import subprocess
 
