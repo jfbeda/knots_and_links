@@ -8,6 +8,8 @@ def load_links(filename, num_subknots, points_per_subknot, num_dimensions):
 
     return data.reshape(-1, total_num_points, num_dimensions)
 
+    # Returns an array of shape (num_links, total_num_points, num_dimensions)
+
 
 def load_writhe(filename, num_subknots, points_per_subknot):
     total_num_points = num_subknots * points_per_subknot

@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 import shutil
 
-NUM_RUNS = 1000
+NUM_RUNS = 3
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -96,7 +96,8 @@ def run_all():
                 "python",
                 str(CONVERTER),
                 "--infolder", str(lmp_out_dir),
-                "--outfolder", str(xyz_out_dir)
+                "--outfolder", str(xyz_out_dir),
+                "--archive-name", f"KNOT_data_{length}_points"
             ],
             check=True,
         )

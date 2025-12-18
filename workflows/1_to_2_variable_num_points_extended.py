@@ -16,7 +16,8 @@ def main():
 
     # target_lengths = [51, 75, 100, 125, 150]
     # target_lengths = [60, 70, 80, 90, 110] 
-    target_lengths = [55, 65, 85, 95, 105]
+    # target_lengths = [55, 65, 85, 95, 105]
+    target_lengths = [55]
 
     for n in target_lengths:
         output_folder = os.path.join(base_output, f"2_normalized_coordinates_{n}")

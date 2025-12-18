@@ -9,9 +9,9 @@ import subprocess
 from pathlib import Path
 import shutil
 
-NUM_RUNS = 10
+NUM_RUNS = 1000
 
-temperatures = [0.9, 1.1, 1.2, 1.3]
+temperatures = [0.3, 0.5, 0.7]
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -48,10 +48,10 @@ def run_all():
         # LAMMPS output folder is ALWAYS the same
         lmp_out_dir = BASE_DIR / "lammps_simulation" / "KNOT_data"
 
-        # # Clean KNOT_data before each length
-        # if lmp_out_dir.exists():
-        #     shutil.rmtree(lmp_out_dir)
-        # lmp_out_dir.mkdir(parents=True)
+        # Clean KNOT_data before each length
+        if lmp_out_dir.exists():
+            shutil.rmtree(lmp_out_dir)
+        lmp_out_dir.mkdir(parents=True)
 
         # Find all input .dat files for this length
         input_dats = sorted(glob.glob(str(INPUT_ROOT / "*.dat")))

@@ -1,6 +1,7 @@
-
 # Call using:
 # python -m workflows.4_to_5_variable_num_points_to_writhe
+
+# Converts the files in input_root into writhe files that we can feed to an ML network
 
 import os
 import subprocess

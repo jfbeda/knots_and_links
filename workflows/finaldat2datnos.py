@@ -7,6 +7,9 @@ import glob
 import os
 import re
 import argparse
+import shutil
+from datetime import datetime
+
 
 # Matches patterns like FINAL_2.2.1.3.dat → prefix FINAL_2.2.1, index 3
 FILE_RE = re.compile(r'^(FINAL_\d+\.\d+\.\d+)\.(\d+)\.dat$')
@@ -19,13 +22,10 @@ def parse_filename(filename):
         return None, None
     return m.group(1), int(m.group(2))
 
+
+
 # def extract_xyz_from_lammps(path):
-#     """
-#     Reads a LAMMPS data file and returns list of (x,y,z) coordinates.
-#     Expected 'Atoms # angle' section format:
-#         id type mol x y z nx ny nz
-#     """
-#     xyz = []
+#     atoms = []
 #     in_atoms = False
 
 #     with open(path) as f:
@@ -40,35 +40,80 @@ def parse_filename(filename):
 #                 if line == "":
 #                     break
 #                 parts = line.split()
+#                 atom_id = int(parts[0])
 #                 x, y, z = map(float, parts[3:6])
-#                 xyz.append((x, y, z))
+#                 atoms.append((atom_id, x, y, z))
 
-#     return xyz
+#     atoms.sort(key=lambda t: t[0])
+
+#     # return only XYZ in sorted order
+#     return [(x, y, z) for (_, x, y, z) in atoms]
 
 def extract_xyz_from_lammps(path):
     atoms = []
     in_atoms = False
 
+    # Box bounds
+    xlo = xhi = ylo = yhi = zlo = zhi = None
+
     with open(path) as f:
         for line in f:
-            if line.strip().startswith("Atoms"):
+            line_stripped = line.strip()
+
+            # --- Read box bounds ---
+            if line_stripped.endswith("xlo xhi"):
+                xlo, xhi = map(float, line_stripped.split()[:2])
+            elif line_stripped.endswith("ylo yhi"):
+                ylo, yhi = map(float, line_stripped.split()[:2])
+            elif line_stripped.endswith("zlo zhi"):
+                zlo, zhi = map(float, line_stripped.split()[:2])
+
+            # --- Enter Atoms section ---
+            elif line_stripped.startswith("Atoms"):
                 in_atoms = True
                 next(f)  # skip blank line
                 continue
 
-            if in_atoms:
-                line = line.strip()
-                if line == "":
+            # --- Read atoms ---
+            elif in_atoms:
+                if line_stripped == "":
                     break
-                parts = line.split()
+
+                parts = line_stripped.split()
+
                 atom_id = int(parts[0])
                 x, y, z = map(float, parts[3:6])
-                atoms.append((atom_id, x, y, z))
 
+                # Image flags (may or may not be present)
+                if len(parts) >= 9:
+                    ix, iy, iz = map(int, parts[6:9])
+                else:
+                    ix = iy = iz = 0
+
+                atoms.append((atom_id, x, y, z, ix, iy, iz))
+
+    # Sanity check
+    if None in (xlo, xhi, ylo, yhi, zlo, zhi):
+        raise ValueError(f"Box bounds not found in {path}")
+
+    # Box lengths
+    Lx = xhi - xlo
+    Ly = yhi - ylo
+    Lz = zhi - zlo
+
+    # Sort by atom ID
     atoms.sort(key=lambda t: t[0])
 
-    # return only XYZ in sorted order
-    return [(x, y, z) for (_, x, y, z) in atoms]
+    # Apply periodic shifts and return XYZ
+    xyz = []
+    for _, x, y, z, ix, iy, iz in atoms:
+        xu = x + ix * Lx
+        yu = y + iy * Ly
+        zu = z + iz * Lz
+        xyz.append((xu, yu, zu))
+
+    return xyz
+
 
 
 # ---------------------------------------------------------------
@@ -79,6 +124,13 @@ def main():
                    help="Folder containing FINAL_X.Y.Z.i.dat files")
     p.add_argument("--outfolder", required=True,
                    help="Folder where XYZ_X.Y.Z.dat.nos outputs will be written")
+    p.add_argument(
+    "--archive-name",
+    default=None,
+    help="Name of archive directory under Archive/. "
+         "If omitted, a timestamped name is used."
+)
+
     args = p.parse_args()
 
     infolder = args.infolder
@@ -140,6 +192,38 @@ def main():
         print(f"  → Wrote {len(all_xyz)} coordinates to {outpath}")
         print(f"  Frames merged: {len(filelist)}   Atoms per frame: {N_expected}")
 
+
+    knot_data_dir = infolder    # KNOT_data
+    archive_root = "Archive"
+
+    # Build archive name
+    if args.archive_name is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_name = f"KNOT_data_FINAL_{timestamp}"
+    else:
+        archive_name = args.archive_name
+
+    archive_dir = os.path.join(archive_root, archive_name)
+
+    if os.path.exists(archive_dir):
+        print(f"Overwriting existing archive: {archive_dir}")
+        shutil.rmtree(archive_dir)
+
+    os.makedirs(archive_dir)
+
+
+    # Find FINAL files inside KNOT_data
+    final_files = glob.glob(os.path.join(knot_data_dir, "FINAL_*.dat"))
+
+    if not final_files:
+        print("Warning: no FINAL_*.dat files found to archive.")
+    else:
+        for fn in final_files:
+            dst = os.path.join(archive_dir, os.path.basename(fn))
+            shutil.copy2(fn, dst)
+
+        print(f"\nArchived {len(final_files)} FINAL files → {archive_dir}")
+    
     print("\nDone.")
 
 # -------------------------
