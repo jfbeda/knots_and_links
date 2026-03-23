@@ -19,7 +19,7 @@ def main():
     num_subknots_per_link = 2
 
     input_root = f"4_xyz_files_{original_num_points}"
-    output_root = "4_xyz_files_variable_length"
+    output_root = "4_xyz_files_variable_length_interpolated"
 
     # Delete and recreate output root
     if os.path.exists(output_root):

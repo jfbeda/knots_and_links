@@ -7,6 +7,7 @@ import subprocess
 
 
 def main():
+    # input_root = "4_"
     input_root = "4_xyz_files_variable_temperature"
     output_root = "5_writhe_files_variable_temperature"
     NUM_POINTS = 60 #really I should be pulling this from the file instead of hardcoding #HACK

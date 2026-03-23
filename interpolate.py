@@ -1,7 +1,6 @@
 
 import numpy as np
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
+import sympy as sp
 
 
 def smooth_and_resample_3d(coords, n_points, smoothness):
@@ -42,35 +41,127 @@ def smooth_and_resample_3d(coords, n_points, smoothness):
 
     return np.column_stack((x_smooth, y_smooth, z_smooth))
 
-# # NEW COORDS. coords is the original coords list. n_points is how many points you want in the new list.
-# # increasing smoothness makes the knot more rounded.
-# og_len=len(coords) # original number of points.
+def resample(coords, n_points):
+    c_open = np.asarray(coords, float)
+    assert len(c_open) > 2, "coords must be longer than 2"
+    assert not np.allclose(c_open[0], c_open[-1]), "coords must be an open list"
+
+    c = np.vstack([c_open, c_open[0]]) # close the input coordinate list
+    d = np.diff(c, axis=0)
+    seg = np.sqrt((d*d).sum(1))
+    cum = np.insert(np.cumsum(seg), 0, 0.0)
+    total = cum[-1]
+    assert total > 0, "curve has zero total length"
+
+    u = np.linspace(0, total, n_points + 1)[:-1]  
+
+    out = []
+    for dist in u:
+        i = np.searchsorted(cum, dist, side="right") - 1   # segment index
+        t = (dist - cum[i]) / seg[i] if seg[i] > 0 else 0.0
+        out.append(c[i] + t * d[i])                        # point along segment i
+
+    return np.asarray(out)
 
 
+def resample_symbolic(coords, m, prec=80):
+    P = [sp.Matrix(p) for p in coords]
+    assert len(P) > 2
+    assert P[0] != P[-1]
 
-# og_smoothness=1 # no extra smoothing
-# new_coords_3d = smooth_and_resample_3d(coords, n_points=og_len*5, smoothness=og_smoothness)
+    P = P + [P[0]]
 
-# closed_coords = np.vstack([new_coords_3d, new_coords_3d[0]])
+    # segment vectors and exact segment lengths
+    d   = [P[i+1] - P[i] for i in range(len(P)-1)]
+    seg = [sp.sqrt(v.dot(v)) for v in d]
 
-# # PLOT 
-# fig = plt.figure(figsize=(9,6))
-# ax = fig.add_subplot(111, projection='3d')
-# ax.plot(closed_coords[:,0], closed_coords[:,1], closed_coords[:,2],
-#         color='green', lw=2)
-# ax.scatter(new_coords_3d[:,0], new_coords_3d[:,1], new_coords_3d[:,2],
-#            color='blue', s=5)
+    # cumulative arclengths (exact expressions)
+    s = [sp.Integer(0)]
+    for Lk in seg:
+        s.append(s[-1] + Lk)
+    Ltot = s[-1]
 
-# # PRINT THE COORDS AFTER INTERPOLATION TO FILE
-# fidd=open('file-coords-interpolated.txt','w')
-# for t in closed_coords:
-#     print(t[0],t[1],t[2],file=fidd)
-# fidd.close()
+    # target distances (exact multiples of total length)
+    U = [sp.Rational(j, m) * Ltot for j in range(m)]
 
-# ax.set_xlabel('X')
-# ax.set_ylabel('Y')
-# ax.set_zlabel('Z')
-# ax.set_title('Knot')
-# ax.legend()
+    # numeric versions for robust segment lookup
+    sN = [sp.N(x, prec) for x in s]
 
-# plt.show()
+    Q = []
+    for u in U:
+        uN = sp.N(u, prec)
+
+        # find i with s[i] <= u < s[i+1] (using numeric comparisons)
+        i = max(k for k in range(len(sN)-1) if sN[k] <= uN)
+
+        # exact interpolation once i is chosen
+        t = (u - s[i]) / seg[i] if seg[i] != 0 else 0
+        q = P[i] + t * d[i]
+        Q.append(sp.simplify(q))
+
+    return Q
+
+# def resample(coords, n_points):
+#     c_open = np.asarray(coords, float)
+#     assert len(c_open) > 2, "coords must be longer than 2"
+#     assert not np.allclose(c_open[0], c_open[-1]), "coords must be an open list"
+
+#     c = np.vstack([c_open, c_open[0]])          # close implicitly
+#     d = np.diff(c, axis=0)
+#     seg = np.sqrt((d*d).sum(1))
+#     cum = np.insert(np.cumsum(seg), 0, 0.0)
+#     total = cum[-1]
+#     assert total > 0, "curve has zero total length"
+
+#     u = np.linspace(0, total, n_points + 1)[:-1]  # n_points, no duplicated endpoint
+
+#     out = []
+#     for dist in u:
+#         i = np.searchsorted(cum, dist, side="right") - 1   # segment index
+#         t = (dist - cum[i]) / seg[i] if seg[i] > 0 else 0.0
+#         out.append(c[i] + t * d[i])                        # point along segment i
+
+#     return np.asarray(out)
+
+# # define algebraic numbers
+# sqrt3  = sp.sqrt(3)
+# sqrt22 = sp.sqrt(22)
+
+# # define points as SymPy column vectors
+# A = sp.Matrix([-1, 0, 0])
+# B = sp.Matrix([ 1, 0, 0])
+
+# C = sp.Matrix([
+#     (13 - 4*sqrt22)/25,
+#     sp.Rational(6, 5),
+#     -4*(sqrt22 - 1)*sqrt3/25
+# ])
+
+# D = sp.Matrix([
+#     sp.Rational(-1, 2),
+#     sp.Rational(3, 5),
+#     sqrt3/2
+# ])
+
+# E = sp.Matrix([
+#     sp.Rational(1, 2),
+#     sp.Rational(3, 5),
+#     -sqrt3/2
+# ])
+
+# F = sp.Matrix([
+#     (-13 + 4*sqrt22)/25,
+#     sp.Rational(6, 5),
+#     4*(sqrt22 - 1)*sqrt3/25
+# ])
+
+# symbolic_output = resample_symbolic([A,B,C,D,E,F], 7)
+
+# trefoil_points = np.array([
+#     [-1.0, 0.0, 0.0],
+#     [ 1.0, 0.0, 0.0],
+#     [(13 - 4*np.sqrt(22))/25, 6/5, -(4/25)*(-1 + np.sqrt(22))*np.sqrt(3)],
+#     [-1/2, 3/5,  (1/2)*np.sqrt(3)],
+#     [ 1/2, 3/5, -(1/2)*np.sqrt(3)],
+#     [(-13 + 4*np.sqrt(22))/25, 6/5, (4/25)*(-1 + np.sqrt(22))*np.sqrt(3)],
+# ])

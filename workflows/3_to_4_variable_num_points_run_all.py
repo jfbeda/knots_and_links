@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 import shutil
 
-NUM_RUNS = 3
+NUM_RUNS = 1000
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -77,7 +77,7 @@ def run_all():
             print(f"  Running LAMMPS for: {simname}")
 
             for i in range(NUM_RUNS):
-                seed = 10000 + i
+                seed = 15000 + i #REPLACE 20000 with 10000
                 cmd = [
                     str(LMP_BINARY),
                     "-in", str(LAMMPS_INPUT),

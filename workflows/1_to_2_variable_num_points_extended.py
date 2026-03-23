@@ -14,12 +14,11 @@ def main():
         shutil.rmtree(base_output)
     os.makedirs(base_output, exist_ok=True)
 
-    # target_lengths = [51, 75, 100, 125, 150]
-    # target_lengths = [60, 70, 80, 90, 110] 
-    # target_lengths = [55, 65, 85, 95, 105]
-    target_lengths = [55]
+    # 
+    target_lengths = [175]
 
     for n in target_lengths:
+
         output_folder = os.path.join(base_output, f"2_normalized_coordinates_{n}")
         os.makedirs(output_folder, exist_ok=True)
 

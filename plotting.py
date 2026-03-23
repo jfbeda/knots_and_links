@@ -1,6 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+
+def interpolated_full_width_at_half_maximum(x,y):
+    """ returns interpolated full width at half maximum, and the two
+        xcoordinates at the (interpolated) half maximum 
+        from https://stackoverflow.com/questions/52782965/pythonic-way-to-determine-width-of-plot
+        """
+    def find_roots(x,y):
+        s = np.abs(np.diff(np.sign(y))).astype(bool)
+        return x[:-1][s] + np.diff(x)[s]/(np.abs(y[1:][s]/y[:-1][s])+1)
+
+    z = find_roots(x,y-y.max()/2)
+    return z.max()-z.min(), z.min(), z.max()
+
 def plot_multi_hist(data, bins=20, labels=None, density = False, title="Histograms (line style)", xlabel = "value", ylabel = "Density"):
     """
     Plot multiple histograms as lines, one for each dataset in a list of lists.

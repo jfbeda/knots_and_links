@@ -148,3 +148,114 @@ def plot_writhe_matrix(W, title="Writhe Matrix"):
     plt.ylabel("Index j")
     plt.tight_layout()
     plt.show()
+
+    
+def plot_writhe_matrix_nice2(
+    W,
+    title="Writhe Matrix",
+    outfile=None,                # e.g. "writhe_matrix.pdf"
+    component_size=60,           # points per component
+    cmap="viridis",
+    colorbar_label="Writhe magnitude",
+    dpi=300,
+):
+    """
+    Plot an NxN writhe matrix with component-separated axes.
+
+    Parameters
+    ----------
+    W : np.ndarray
+        Square (2n x 2n) writhe matrix.
+    title : str
+        Title for the plot.
+    outfile : str or None
+        If given, save figure to this path instead of showing interactively.
+    component_size : int
+        Number of indices per component (e.g. 60 for a 120x120 matrix).
+    cmap : str
+        Matplotlib colormap.
+    colorbar_label : str
+        Label for the colorbar.
+    dpi : int
+        Resolution for saved figure.
+    """
+    if not isinstance(W, np.ndarray):
+        raise TypeError("W must be a numpy array.")
+    if W.ndim != 2 or W.shape[0] != W.shape[1]:
+        raise ValueError("W must be a square matrix.")
+    if W.shape[0] != 2 * component_size:
+        raise ValueError(
+            f"Expected matrix of size {2*component_size}×{2*component_size}, "
+            f"got {W.shape}"
+        )
+
+    N = W.shape[0]
+
+    fig, ax = plt.subplots(figsize=(6.5, 5.5))
+
+    im = ax.imshow(
+        W,
+        cmap=cmap,
+        origin="upper",
+        aspect="equal",
+    )
+
+    # ---- Colorbar ----
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label(colorbar_label)
+
+    # ---- Sparse ticks: 20, 40, 60 | 20, 40, 60 ----
+    tick_vals = np.array([10, 30, 50])
+    tick_pos = np.concatenate([
+        tick_vals - 1,
+        component_size + tick_vals - 1
+    ])
+
+    tick_labels = np.concatenate([tick_vals, tick_vals])
+
+    ax.set_xticks(tick_pos)
+    ax.set_yticks(tick_pos)
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+
+    # # ---- Axis ticks: 1..60 | 1..60 ----
+    # ticks = np.arange(N)
+    # labels = np.concatenate([
+    #     np.arange(1, component_size + 1),
+    #     np.arange(1, component_size + 1),
+    # ])
+
+    # # ---- Sparse ticks: 20, 40, 60 | 20, 40, 60 ----
+    # tick_vals = np.array([20, 40, 60])
+    # tick_pos = np.concatenate([
+    #     tick_vals - 1,
+    #     component_size + tick_vals - 1
+    # ])
+
+    # ax.set_xticks(ticks)
+    # ax.set_yticks(ticks)
+    # ax.set_xticklabels(labels)
+    # ax.set_yticklabels(labels)
+
+    # ---- Visual separator between components ----
+    sep = component_size - 0.5
+    ax.axhline(sep, color="white", linewidth=1.2)
+    ax.axvline(sep, color="white", linewidth=1.2)
+
+    # ---- Axis labels (split meaning) ----
+    ax.set_xlabel("Component 1 index            Component 2 index")
+    ax.set_ylabel("Component 2 index            Component 1 index")
+
+    # ---- Title ----
+    ax.set_title(title)
+
+    # ---- Ticks formatting ----
+    ax.tick_params(axis="both", which="major", labelsize=8)
+
+    fig.tight_layout()
+    plt.show()
+    # ---- Save or show ----
+    if outfile is not None:
+        fig.savefig(outfile, dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
+    

@@ -548,7 +548,6 @@ def normalize_link(link, desired_num_points_per_subknot):
     assert link.total_num_points == link.num_subknots * desired_num_points_per_subknot, f"The normalized link doesn't have the right number of points in it! It is supposed to have {link.num_subknots * desired_num_points_per_subknot} points in total, but instead has {link.total_num_points} points in total"
 
 ###############################################################################
-
 class Visualizer:
     """
     Minimal 3D visualizer for Knot and Link objects.
@@ -557,6 +556,9 @@ class Visualizer:
         vis = Visualizer()
         vis.show_knot(myknot, mode="line")
         vis.show_link(mylink, mode="scatter")
+        vis.show_knot(myknot, mode="both")
+        vis.show_link(mylink, mode="both")
+
     """
 
     def __init__(self):
@@ -570,16 +572,17 @@ class Visualizer:
 
         fig, ax = self._ensure_axes(ax)
 
-        if mode == "line":
+        if mode in ("line", "both"):
             self._plot_line(ax, coords, closed=closed)
-        elif mode == "scatter":
+        if mode in ("scatter", "both"):
             self._plot_scatter(ax, coords)
-        else:
-            raise ValueError("mode must be 'line' or 'scatter'")
+        if mode not in ("line", "scatter", "both"):
+            raise ValueError("mode must be 'line', 'scatter', or 'both'")
 
         self._set_equal_aspect(ax, coords)
         self._format_axes(ax, title or getattr(knot, "name", "Knot"))
         plt.show()
+
 
     def show_link(self, link, *, mode="line", closed=True, ax=None, title=None, legend=True):
         if not link.subknots:
@@ -591,21 +594,25 @@ class Visualizer:
         for name, knot in link.subknots.items():
             coords = np.asarray(knot.coords, dtype=float)
             self._validate_coords(coords)
-            label = name
-            if mode == "line":
-                self._plot_line(ax, coords, closed=closed, label=label)
-            else:
-                self._plot_scatter(ax, coords, label=label)
+
+            if mode in ("line", "both"):
+                self._plot_line(ax, coords, closed=closed, label=name)
+            if mode in ("scatter", "both"):
+                self._plot_scatter(ax, coords, label=name)
+
             all_coords.append(coords)
 
-        # ensure all points are visible
+        if mode not in ("line", "scatter", "both"):
+            raise ValueError("mode must be 'line', 'scatter', or 'both'")
+
         all_coords = np.vstack(all_coords)
         self._set_equal_aspect(ax, all_coords)
-
         self._format_axes(ax, title or getattr(link, "name", "Link"))
+
         if legend:
             ax.legend(loc="best")
         plt.show()
+
 
     # ---------- Internals ----------
 
@@ -630,7 +637,15 @@ class Visualizer:
         ax.plot(xs, ys, zs, label=label)
 
     def _plot_scatter(self, ax, coords, label=None):
-        ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2], label=label)
+        ax.scatter(
+            coords[:, 0],
+            coords[:, 1],
+            coords[:, 2],
+            label=label,
+            alpha=0.9,      # alpha sets transparency
+            s=25            # optional: point size
+        )
+
 
     def _format_axes(self, ax, title):
         ax.set_title(title)

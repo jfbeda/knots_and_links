@@ -11,7 +11,7 @@ import shutil
 
 NUM_RUNS = 1000
 
-temperatures = [0.3, 0.5, 0.7]
+temperatures = [5.4, 5.6, 5.8, 6.0]
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,7 +29,7 @@ os.makedirs(XYZ_ROOT, exist_ok=True)
 
 # LAMMPS executable + script
 LMP_BINARY = BASE_DIR / "lammps_simulation" / "lmp_serial"
-LAMMPS_INPUT = BASE_DIR / "lammps_simulation" / "runbulk.lam"
+LAMMPS_INPUT = BASE_DIR / "lammps_simulation" / "runbulknew.lam"
 
 # Python converter
 CONVERTER = BASE_DIR / "workflows" / "finaldat2datnos.py"
@@ -91,7 +91,8 @@ def run_all():
                 "python",
                 str(CONVERTER),
                 "--infolder", str(lmp_out_dir),
-                "--outfolder", str(out_path)
+                "--outfolder", str(out_path),
+                "--archive-name", f"KNOT_data_temperature——{T}"
             ],
             check=True,
         )
