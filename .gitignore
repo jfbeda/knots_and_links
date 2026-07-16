@@ -2,13 +2,9 @@
 __pycache__/
 *.ipynb
 *.dat.nos
-1_main_coordinates*
-2_normalized_coordinates*
-3_lammps_normalized_coordinates*
+0_good_data*
 lammps_simulation
 log.lammps
-4_xyz_files*
-5_writhe_files*
 beachball.py
 *.code-workspace
 Archive/
