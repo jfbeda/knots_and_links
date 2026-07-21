@@ -1,0 +1,87 @@
+# IF IN DOUBT, LOOK @ https://lammps.sandia.gov/doc/Manual.html
+
+#######################################
+###       SIMULATION SETTINGS       ###
+#######################################
+units          lj
+atom_style     angle
+boundary       p p p
+neighbor       1.0 bin
+neigh_modify   every 1 delay 1 check yes
+
+#######################################
+###           VARIABLES             ###
+#######################################
+# Passed from Python: simname, runid, seed
+variable simname  index  mylink
+variable runid    index  0
+variable seed     index  2142
+variable T index 1.0
+
+
+# Output folder for saving results
+variable foldername string lammps_simulation/KNOT_data
+shell mkdir ${foldername}/
+
+# Restart file output
+# restart 10000 ${foldername}/Restart.${simname}.${runid}.
+
+#######################################
+###          READ DATA FILE         ###
+#######################################
+read_data ${simdir}/${simname}.dat
+
+#######################################
+###          PAIR INTERACTIONS      ###
+#######################################
+pair_style  lj/cut 1.12246
+pair_modify shift yes
+pair_coeff  * * 1.0 1.0 1.12246
+
+#######################################
+###            BONDS                ###
+#######################################
+bond_style   harmonic
+bond_coeff   1 100.0 1.1
+
+#######################################
+###            ANGLES               ###
+#######################################
+angle_style  cosine
+angle_coeff  1 10.0
+
+#######################################
+###      INTEGRATION + THERMOSTAT   ###
+#######################################
+fix 1 all nve
+fix 2 all langevin ${T} ${T} 1.0 ${seed}
+
+#######################################
+###      THERMO + TIMESTEP + RESET  ###
+#######################################
+thermo        1000
+thermo_style  custom step temp epair vol cpu
+timestep      0.01
+reset_timestep 0
+
+#######################################
+###        EQUILIBRATION RUN        ###
+#######################################
+run 10000
+
+#######################################
+###        UPDATE BOND MODEL        ###
+#######################################
+bond_style fene
+bond_coeff 1 30.0 1.5 1.0 1.0
+
+#######################################
+###        PRODUCTION RUN           ###
+#######################################
+reset_timestep 0
+run 200000
+
+#######################################
+###      SAVE FINAL CONFIG          ###
+#######################################
+write_data ${foldername}/FINAL_${simname}.${runid}.dat

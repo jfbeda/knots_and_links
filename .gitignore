@@ -3,7 +3,7 @@ __pycache__/
 *.ipynb
 *.dat.nos
 0_good_data*
-lammps_simulation
+lammps_simulation/KNOT_data
 log.lammps
 beachball.py
 *.code-workspace
